@@ -21,6 +21,7 @@ const Sidebar = ({ role }) => {
     admin: [
       { label: 'Дашборд', path: '/admin/dashboard' },
       { label: 'Пайдаланушылар', path: '/admin/users' },
+      { label: 'Мектептер', path: '/admin/schools' },
       { label: 'Хабарландырулар', path: '/admin/notifications' },
       { label: 'Баптаулар', path: '/admin/settings' },
     ],

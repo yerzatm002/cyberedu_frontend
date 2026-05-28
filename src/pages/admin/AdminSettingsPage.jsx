@@ -1,24 +1,43 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import MainLayout from '@/components/layout/MainLayout'
-import mockSystemSettings from '@/data/mockSystemSettings'
+import {
+  useAdminSettings,
+  useUpdateAdminSettings,
+} from '@/features/admin/admin.queries'
 
 const AdminSettingsPage = () => {
-  const user = JSON.parse(localStorage.getItem('mockUser'))
+  const user = JSON.parse(localStorage.getItem('user'))
 
-  const [settings, setSettings] = useState(mockSystemSettings)
-  const [saved, setSaved] = useState(false)
+  const { data, isLoading, isError, error } = useAdminSettings()
+  const updateMutation = useUpdateAdminSettings()
+
+  const [settings, setSettings] = useState({
+    academicYear: '',
+    platformName: '',
+    courseTitle: '',
+    defaultLanguage: 'kk',
+    registrationEnabled: true,
+    certificateEnabled: true,
+    courseActive: true,
+  })
+
+  useEffect(() => {
+    if (data?.settings) {
+      setSettings(data.settings)
+    }
+  }, [data])
 
   const handleChange = (field, value) => {
     setSettings((prev) => ({
       ...prev,
       [field]: value,
     }))
-    setSaved(false)
   }
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    setSaved(true)
+
+    updateMutation.mutate(settings)
   }
 
   return (
@@ -27,114 +46,153 @@ const AdminSettingsPage = () => {
         <div>
           <h2 className="text-3xl font-bold text-green-900">Жүйе баптаулары</h2>
           <p className="mt-2 text-gray-600">
-            Бұл бөлімде платформаның негізгі параметрлерін өзгертуге болады
+            Платформа, курс, тіркелу және сертификат параметрлерін басқару
           </p>
         </div>
 
-        <div className="rounded-3xl bg-white p-6 shadow-sm">
-          <form onSubmit={handleSubmit} className="grid gap-5 md:grid-cols-2">
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                Платформа атауы
-              </label>
-              <input
-                type="text"
-                value={settings.platformName}
-                onChange={(e) => handleChange('platformName', e.target.value)}
-                className="w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm outline-none focus:border-green-700"
-              />
-            </div>
+        {isLoading && (
+          <div className="rounded-3xl bg-white p-6 shadow-sm">
+            Баптаулар жүктеліп жатыр...
+          </div>
+        )}
 
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                Академиялық жыл
-              </label>
-              <input
-                type="text"
-                value={settings.academicYear}
-                onChange={(e) => handleChange('academicYear', e.target.value)}
-                className="w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm outline-none focus:border-green-700"
-              />
-            </div>
+        {isError && (
+          <div className="rounded-3xl bg-red-50 p-6 text-red-700 shadow-sm">
+            {error.message}
+          </div>
+        )}
 
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                Тіл
-              </label>
-              <select
-                value={settings.language}
-                onChange={(e) => handleChange('language', e.target.value)}
-                className="w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm outline-none focus:border-green-700"
-              >
-                <option>Қазақ тілі</option>
-                <option>Орыс тілі</option>
-                <option>Ағылшын тілі</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                Сабақ саны
-              </label>
-              <input
-                type="number"
-                value={settings.totalLessons}
-                onChange={(e) => handleChange('totalLessons', e.target.value)}
-                className="w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm outline-none focus:border-green-700"
-              />
-            </div>
-
-            <div className="rounded-2xl bg-green-50 p-4">
-              <label className="flex items-center justify-between gap-4">
-                <span className="text-sm font-medium text-gray-700">
-                  Сертификат беру жүйесі
-                </span>
+        {!isLoading && !isError && (
+          <div className="rounded-3xl bg-white p-6 shadow-sm">
+            <form onSubmit={handleSubmit} className="grid gap-5 md:grid-cols-2">
+              <div>
+                <label className="mb-2 block text-sm font-medium text-gray-700">
+                  Платформа атауы
+                </label>
                 <input
-                  type="checkbox"
-                  checked={settings.certificateEnabled}
-                  onChange={(e) =>
-                    handleChange('certificateEnabled', e.target.checked)
-                  }
-                  className="h-5 w-5"
+                  type="text"
+                  value={settings.platformName}
+                  onChange={(e) => handleChange('platformName', e.target.value)}
+                  className="w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm outline-none focus:border-green-700"
                 />
-              </label>
-            </div>
+              </div>
 
-            <div className="rounded-2xl bg-green-50 p-4">
-              <label className="flex items-center justify-between gap-4">
-                <span className="text-sm font-medium text-gray-700">
-                  Хабарландыру жүйесі
-                </span>
+              <div>
+                <label className="mb-2 block text-sm font-medium text-gray-700">
+                  Курс атауы
+                </label>
                 <input
-                  type="checkbox"
-                  checked={settings.notificationsEnabled}
-                  onChange={(e) =>
-                    handleChange('notificationsEnabled', e.target.checked)
-                  }
-                  className="h-5 w-5"
+                  type="text"
+                  value={settings.courseTitle}
+                  onChange={(e) => handleChange('courseTitle', e.target.value)}
+                  className="w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm outline-none focus:border-green-700"
                 />
-              </label>
-            </div>
+              </div>
 
-            <div className="md:col-span-2">
-              <button
-                type="submit"
-                className="rounded-2xl bg-green-700 px-6 py-3 font-semibold text-white transition hover:bg-green-800"
-              >
-                Баптауларды сақтау
-              </button>
-            </div>
-          </form>
+              <div>
+                <label className="mb-2 block text-sm font-medium text-gray-700">
+                  Академиялық жыл
+                </label>
+                <input
+                  type="text"
+                  value={settings.academicYear}
+                  onChange={(e) => handleChange('academicYear', e.target.value)}
+                  className="w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm outline-none focus:border-green-700"
+                  placeholder="2025-2026"
+                />
+              </div>
 
-          {saved && (
-            <div className="mt-6 rounded-2xl bg-yellow-50 p-4">
-              <p className="font-semibold text-yellow-800">Сақталды</p>
-              <p className="mt-1 text-sm text-gray-700">
-                Бұл mock нұсқада баптаулар интерфейс деңгейінде уақытша сақталды
-              </p>
-            </div>
-          )}
-        </div>
+              <div>
+                <label className="mb-2 block text-sm font-medium text-gray-700">
+                  Негізгі тіл
+                </label>
+                <select
+                  value={settings.defaultLanguage}
+                  onChange={(e) =>
+                    handleChange('defaultLanguage', e.target.value)
+                  }
+                  className="w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm outline-none focus:border-green-700"
+                >
+                  <option value="kk">Қазақ тілі</option>
+                  <option value="ru">Орыс тілі</option>
+                  <option value="en">Ағылшын тілі</option>
+                </select>
+              </div>
+
+              <div className="rounded-2xl bg-green-50 p-4">
+                <label className="flex items-center justify-between gap-4">
+                  <span className="text-sm font-medium text-gray-700">
+                    Тіркелу қосулы
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={settings.registrationEnabled}
+                    onChange={(e) =>
+                      handleChange('registrationEnabled', e.target.checked)
+                    }
+                    className="h-5 w-5"
+                  />
+                </label>
+              </div>
+
+              <div className="rounded-2xl bg-green-50 p-4">
+                <label className="flex items-center justify-between gap-4">
+                  <span className="text-sm font-medium text-gray-700">
+                    Сертификат беру қосулы
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={settings.certificateEnabled}
+                    onChange={(e) =>
+                      handleChange('certificateEnabled', e.target.checked)
+                    }
+                    className="h-5 w-5"
+                  />
+                </label>
+              </div>
+
+              <div className="rounded-2xl bg-green-50 p-4 md:col-span-2">
+                <label className="flex items-center justify-between gap-4">
+                  <span className="text-sm font-medium text-gray-700">
+                    Курс белсенді
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={settings.courseActive}
+                    onChange={(e) =>
+                      handleChange('courseActive', e.target.checked)
+                    }
+                    className="h-5 w-5"
+                  />
+                </label>
+              </div>
+
+              <div className="md:col-span-2">
+                <button
+                  type="submit"
+                  disabled={updateMutation.isPending}
+                  className="rounded-2xl bg-green-700 px-6 py-3 font-semibold text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:bg-gray-300"
+                >
+                  {updateMutation.isPending
+                    ? 'Сақталып жатыр...'
+                    : 'Баптауларды сақтау'}
+                </button>
+              </div>
+            </form>
+
+            {updateMutation.isSuccess && (
+              <div className="mt-6 rounded-2xl bg-green-50 p-4 text-sm text-green-800">
+                Баптаулар сәтті сақталды
+              </div>
+            )}
+
+            {updateMutation.isError && (
+              <div className="mt-6 rounded-2xl bg-red-50 p-4 text-sm text-red-700">
+                {updateMutation.error.message}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </MainLayout>
   )

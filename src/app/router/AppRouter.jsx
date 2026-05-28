@@ -20,16 +20,27 @@ import AdminDashboardPage from '@/pages/admin/AdminDashboardPage'
 import AdminUsersPage from '@/pages/admin/AdminUsersPage'
 import AdminNotificationsPage from '@/pages/admin/AdminNotificationsPage'
 import AdminSettingsPage from '@/pages/admin/AdminSettingsPage'
+import ForbiddenPage from '@/pages/ForbiddenPage'
+import AdminSchoolsPage from '@/pages/admin/AdminSchoolsPage'
 
 const ProtectedRoute = ({ children, allowedRole }) => {
-  const user = JSON.parse(localStorage.getItem('mockUser'))
+  const user = JSON.parse(localStorage.getItem('user'))
+  const accessToken = localStorage.getItem('accessToken')
 
-  if (!user) {
+  if (!accessToken || !user) {
+    return <Navigate to="/login" replace />
+  }
+
+  if (user.status && user.status !== 'active') {
+    localStorage.removeItem('user')
+    localStorage.removeItem('accessToken')
+    localStorage.removeItem('refreshToken')
+
     return <Navigate to="/login" replace />
   }
 
   if (allowedRole && user.role !== allowedRole) {
-    return <Navigate to="/login" replace />
+    return <Navigate to="/forbidden" replace />
   }
 
   return children
@@ -41,7 +52,15 @@ const AppRouter = () => {
       <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
-
+      <Route path="/forbidden" element={<ForbiddenPage />} />
+      <Route
+        path="/admin/schools"
+        element={
+          <ProtectedRoute allowedRole="admin">
+            <AdminSchoolsPage />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/student/dashboard"
         element={

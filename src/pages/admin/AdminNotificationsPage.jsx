@@ -1,44 +1,54 @@
 import { useState } from 'react'
 import MainLayout from '@/components/layout/MainLayout'
-import mockAnnouncements from '@/data/mockAnnouncements'
+import { useCreateBroadcastNotification } from '@/features/notifications/notifications.queries'
 
 const AdminNotificationsPage = () => {
-  const user = JSON.parse(localStorage.getItem('mockUser'))
+  const user = JSON.parse(localStorage.getItem('user'))
 
-  const [announcements, setAnnouncements] = useState(mockAnnouncements)
   const [title, setTitle] = useState('')
-  const [audience, setAudience] = useState('Барлық пайдаланушылар')
+  const [targetRole, setTargetRole] = useState('student')
+  const [type, setType] = useState('info')
   const [message, setMessage] = useState('')
+  const [lastResult, setLastResult] = useState(null)
+
+  const createBroadcastMutation = useCreateBroadcastNotification()
 
   const handleSubmit = (e) => {
     e.preventDefault()
 
     if (!title.trim() || !message.trim()) {
-      alert('Барлық өрістерді толтырыңыз')
+      alert('Тақырып пен мәтінді толтырыңыз')
       return
     }
 
-    const newAnnouncement = {
-      id: Date.now(),
-      title,
-      audience,
-      message,
-      date: new Date().toISOString().slice(0, 10),
-    }
-
-    setAnnouncements((prev) => [newAnnouncement, ...prev])
-    setTitle('')
-    setAudience('Барлық пайдаланушылар')
-    setMessage('')
+    createBroadcastMutation.mutate(
+      {
+        title,
+        message,
+        type,
+        targetRole,
+      },
+      {
+        onSuccess: (data) => {
+          setLastResult(data)
+          setTitle('')
+          setMessage('')
+          setType('info')
+          setTargetRole('student')
+        },
+      },
+    )
   }
 
   return (
     <MainLayout user={user}>
       <div className="space-y-6">
         <div>
-          <h2 className="text-3xl font-bold text-green-900">Хабарландырулар</h2>
+          <h2 className="text-3xl font-bold text-green-900">
+            Хабарландырулар
+          </h2>
           <p className="mt-2 text-gray-600">
-            Бұл бөлімде барлық пайдаланушыларға хабар жіберуге болады
+            Әкімші белгілі бір рөлге жалпы хабарландыру жібере алады
           </p>
         </div>
 
@@ -64,17 +74,32 @@ const AdminNotificationsPage = () => {
 
               <div>
                 <label className="mb-2 block text-sm font-medium text-gray-700">
-                  Аудитория
+                  Мақсатты рөл
                 </label>
                 <select
-                  value={audience}
-                  onChange={(e) => setAudience(e.target.value)}
+                  value={targetRole}
+                  onChange={(e) => setTargetRole(e.target.value)}
                   className="w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm outline-none focus:border-green-700"
                 >
-                  <option>Барлық пайдаланушылар</option>
-                  <option>Оқушылар</option>
-                  <option>Мұғалімдер</option>
-                  <option>Әкімшілер</option>
+                  <option value="student">Оқушылар</option>
+                  <option value="teacher">Мұғалімдер</option>
+                  <option value="admin">Әкімшілер</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-medium text-gray-700">
+                  Түрі
+                </label>
+                <select
+                  value={type}
+                  onChange={(e) => setType(e.target.value)}
+                  className="w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm outline-none focus:border-green-700"
+                >
+                  <option value="info">Ақпарат</option>
+                  <option value="success">Сәтті</option>
+                  <option value="warning">Ескерту</option>
+                  <option value="error">Қате</option>
                 </select>
               </div>
 
@@ -92,38 +117,52 @@ const AdminNotificationsPage = () => {
 
               <button
                 type="submit"
-                className="rounded-2xl bg-green-700 px-6 py-3 font-semibold text-white transition hover:bg-green-800"
+                disabled={createBroadcastMutation.isPending}
+                className="rounded-2xl bg-green-700 px-6 py-3 font-semibold text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:bg-gray-300"
               >
-                Хабар жіберу
+                {createBroadcastMutation.isPending
+                  ? 'Жіберіліп жатыр...'
+                  : 'Хабар жіберу'}
               </button>
             </form>
+
+            {createBroadcastMutation.isError && (
+              <div className="mt-5 rounded-2xl bg-red-50 p-4 text-sm text-red-700">
+                {createBroadcastMutation.error.message}
+              </div>
+            )}
           </div>
 
           <div className="rounded-3xl bg-white p-6 shadow-sm xl:col-span-2">
             <h3 className="text-2xl font-semibold text-green-800">
-              Хабарландырулар тарихы
+              Жіберу нәтижесі
             </h3>
 
-            <div className="mt-6 space-y-4">
-              {announcements.map((item) => (
-                <div
-                  key={item.id}
-                  className="rounded-2xl border border-green-100 bg-green-50 p-5"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <h4 className="text-lg font-semibold text-gray-900">
-                      {item.title}
-                    </h4>
-                    <span className="text-sm text-gray-500">{item.date}</span>
-                  </div>
+            {lastResult ? (
+              <div className="mt-6 rounded-2xl bg-green-50 p-5">
+                <p className="text-lg font-semibold text-green-900">
+                  Хабарландыру сәтті жіберілді
+                </p>
 
-                  <p className="mt-2 text-sm font-medium text-green-800">
-                    Аудитория: {item.audience}
-                  </p>
+                <p className="mt-2 text-gray-700">
+                  Құрылған хабарландыру саны: {lastResult.createdCount}
+                </p>
+              </div>
+            ) : (
+              <div className="mt-6 rounded-2xl bg-yellow-50 p-5 text-gray-700">
+                Әзірге хабарландыру жіберілген жоқ
+              </div>
+            )}
 
-                  <p className="mt-3 text-gray-700">{item.message}</p>
-                </div>
-              ))}
+            <div className="mt-6 rounded-2xl bg-green-50 p-5">
+              <h4 className="font-semibold text-green-900">
+                API байланысы
+              </h4>
+              <p className="mt-2 text-sm text-gray-700">
+                Бұл бет POST /admin/notifications endpoint арқылы targetRole
+                бойынша broadcast жасайды. Teacher review жасалған кезде оқушыға
+                жеке хабарландыру backend арқылы автоматты құрылады.
+              </p>
             </div>
           </div>
         </div>

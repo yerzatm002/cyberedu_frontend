@@ -1,10 +1,18 @@
 import { useNavigate } from 'react-router-dom'
+import { logout } from '@/features/auth/auth.api'
 
 const Header = ({ user }) => {
   const navigate = useNavigate()
 
-  const handleLogout = () => {
-    localStorage.removeItem('mockUser')
+  const handleLogout = async () => {
+    try {
+      await logout()
+    } catch {
+      localStorage.removeItem('user')
+      localStorage.removeItem('accessToken')
+      localStorage.removeItem('refreshToken')
+    }
+
     navigate('/login')
   }
 
@@ -19,7 +27,9 @@ const Header = ({ user }) => {
 
       <div className="flex items-center gap-4">
         <div className="text-right">
-          <p className="text-sm font-semibold text-gray-800">{user?.name}</p>
+          <p className="text-sm font-semibold text-gray-800">
+            {user?.fullName || user?.name}
+          </p>
           <p className="text-xs text-gray-500">{user?.email}</p>
         </div>
 

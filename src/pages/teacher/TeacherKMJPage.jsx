@@ -3,7 +3,7 @@ import MainLayout from '@/components/layout/MainLayout'
 import mockLessons from '@/data/mockLessons'
 
 const TeacherKMJPage = () => {
-  const user = JSON.parse(localStorage.getItem('mockUser'))
+  const user = JSON.parse(localStorage.getItem('user'))
   const [generated, setGenerated] = useState(false)
 
   const handleGenerate = () => {

@@ -1,37 +1,33 @@
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { useMutation } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router-dom'
-import mockUsers from '@/data/mockUsers'
+import { login } from '@/features/auth/auth.api'
 
 const LoginPage = () => {
   const { register, handleSubmit } = useForm()
   const navigate = useNavigate()
+  const [errorMessage, setErrorMessage] = useState('')
+
+  const loginMutation = useMutation({
+    mutationFn: login,
+    onSuccess: (data) => {
+      if (data.user.role === 'student') navigate('/student/dashboard')
+      if (data.user.role === 'teacher') navigate('/teacher/dashboard')
+      if (data.user.role === 'admin') navigate('/admin/dashboard')
+    },
+    onError: (error) => {
+      setErrorMessage(error.message || 'Кіру кезінде қате пайда болды')
+    },
+  })
 
   const onSubmit = (data) => {
-    const foundUser = mockUsers.find(
-      (user) =>
-        user.email === data.email &&
-        user.password === data.password &&
-        user.role === data.role,
-    )
+    setErrorMessage('')
 
-    if (!foundUser) {
-      alert('Қате мәліметтер енгізілді')
-      return
-    }
-
-    localStorage.setItem('mockUser', JSON.stringify(foundUser))
-
-    if (foundUser.role === 'student') {
-      navigate('/student/dashboard')
-    }
-
-    if (foundUser.role === 'teacher') {
-      navigate('/teacher/dashboard')
-    }
-
-    if (foundUser.role === 'admin') {
-      navigate('/admin/dashboard')
-    }
+    loginMutation.mutate({
+      email: data.email,
+      password: data.password,
+    })
   }
 
   return (
@@ -40,9 +36,15 @@ const LoginPage = () => {
         <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold text-green-800">Жүйеге кіру</h1>
           <p className="mt-2 text-sm text-gray-600">
-            Рөлге сәйкес тесттік аккаунт арқылы кіріңіз
+            Платформаға кіру үшін email және құпиясөз енгізіңіз
           </p>
         </div>
+
+        {errorMessage && (
+          <div className="mb-5 rounded-2xl bg-red-50 p-4 text-sm text-red-700">
+            {errorMessage}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
           <div>
@@ -51,8 +53,8 @@ const LoginPage = () => {
             </label>
             <input
               type="email"
-              placeholder="Email енгізіңіз"
-              {...register('email')}
+              placeholder="student@cyberqazaq.kz"
+              {...register('email', { required: true })}
               className="w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-green-700"
             />
           </div>
@@ -64,44 +66,30 @@ const LoginPage = () => {
             <input
               type="password"
               placeholder="Құпиясөзді енгізіңіз"
-              {...register('password')}
+              {...register('password', { required: true })}
               className="w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-green-700"
             />
           </div>
 
-          <div>
-            <label className="mb-2 block text-sm font-medium text-gray-700">
-              Рөл
-            </label>
-            <select
-              {...register('role')}
-              defaultValue="student"
-              className="w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-green-700"
-            >
-              <option value="student">Оқушы</option>
-              <option value="teacher">Мұғалім</option>
-              <option value="admin">Әкімші</option>
-            </select>
-          </div>
-
           <button
             type="submit"
-            className="w-full rounded-2xl bg-green-700 px-4 py-3 font-semibold text-white transition hover:bg-green-800"
+            disabled={loginMutation.isPending}
+            className="w-full rounded-2xl bg-green-700 px-4 py-3 font-semibold text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:bg-gray-300"
           >
-            Кіру
+            {loginMutation.isPending ? 'Кіру орындалуда...' : 'Кіру'}
           </button>
         </form>
 
-        <div className="mt-6 rounded-2xl bg-yellow-50 p-4 text-sm text-gray-700">
-          <p className="font-medium text-yellow-800">Тесттік аккаунттар</p>
-          <div className="mt-3 space-y-2">
-            <p>Оқушы: student@cyberqazaq.kz / 123456</p>
-            <p>Мұғалім: teacher@cyberqazaq.kz / 123456</p>
-            <p>Әкімші: admin@cyberqazaq.kz / 123456</p>
-          </div>
+        <div className="mt-6 text-center">
+          <Link
+            to="/register"
+            className="text-sm font-medium text-green-700 transition hover:text-green-800"
+          >
+            Аккаунтыңыз жоқ па? Тіркелу
+          </Link>
         </div>
 
-        <div className="mt-6 text-center">
+        <div className="mt-4 text-center">
           <Link
             to="/"
             className="text-sm font-medium text-green-700 transition hover:text-green-800"
